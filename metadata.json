@@ -1,0 +1,7 @@
+{
+  "name": "Led pixel v 3.2",
+  "description": "An advanced tool to convert images into CAD-ready DXF files with automated LED placement. Perfect for signage and neon lighting design.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

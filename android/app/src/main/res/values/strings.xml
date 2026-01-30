@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sign Pixel Led</string>
+    <string name="title_activity_main">Sign Pixel Led</string>
+    <string name="package_name">com.alomessi.signpixelled</string>
+    <string name="custom_url_scheme">com.alomessi.signpixelled</string>
+</resources>
