@@ -11,7 +11,7 @@ import { processDesign } from './services/imageProcessor';
 import { generateDXF } from './services/dxfGenerator';
 import { generateSVG } from './services/svgGenerator';
 import { generatePDF } from './services/pdfGenerator';
-import { saveOutputFile } from './services/saveOutputFile';
+import { requestStoragePermissions, saveToDevice, shareFile } from './services/saveOutputFile';
 import { analyzeDesignWithAI } from './services/geminiService';
 
 enum AppStep {
@@ -24,39 +24,44 @@ enum AppStep {
   HISTORY = 7
 }
 
+// طلب أذونات التخزين عند بداية تشغيل التطبيق على الهاتف
+useEffect(() => {
+  if ((window as any)?.Capacitor) {
+    requestStoragePermissions().catch(() => {});
+  }
+}, []);
+
 const downloadFile = async (content: any, extension: string) => {
   const filename = `led_design_${Date.now()}.${extension}`;
 
-  if (extension === "svg") {
-    await saveOutputFile({ filename, mime: "image/svg+xml", text: String(content) });
-    return;
-  }
+  // طلب الأذونات مع بداية أول استخدام
+  await requestStoragePermissions();
 
-  if (extension === "dxf") {
-    await saveOutputFile({ filename, mime: "application/dxf", text: String(content) });
-    return;
-  }
+  // قائمة خيارين: OK = حفظ على الجهاز | Cancel = مشاركة
+  const save = window.confirm("اختَر العملية:\n\nOK = حفظ على الجهاز\nCancel = مشاركة عبر التطبيقات");
 
-  if (extension === "pdf") {
-    if (content instanceof Uint8Array) {
-      await saveOutputFile({ filename, mime: "application/pdf", bytes: content });
-      return;
-    }
-    if (content instanceof ArrayBuffer) {
-      await saveOutputFile({ filename, mime: "application/pdf", bytes: new Uint8Array(content) });
-      return;
-    }
-    if (typeof Blob !== "undefined" && content instanceof Blob) {
+  const payload: any = { filename };
+  if (extension === "svg") { payload.mime = "image/svg+xml"; payload.text = String(content); }
+  else if (extension === "dxf") { payload.mime = "application/dxf"; payload.text = String(content); }
+  else if (extension === "pdf") {
+    payload.mime = "application/pdf";
+    if (content instanceof Uint8Array) payload.bytes = content;
+    else if (content instanceof ArrayBuffer) payload.bytes = new Uint8Array(content);
+    else if (typeof Blob !== "undefined" && content instanceof Blob) {
       const ab = await content.arrayBuffer();
-      await saveOutputFile({ filename, mime: "application/pdf", bytes: new Uint8Array(ab) });
-      return;
+      payload.bytes = new Uint8Array(ab);
+    } else {
+      const enc = new TextEncoder();
+      payload.bytes = enc.encode(String(content));
     }
-    const enc = new TextEncoder();
-    await saveOutputFile({ filename, mime: "application/pdf", bytes: enc.encode(String(content)) });
-    return;
-  }
+  } else { payload.mime = "application/octet-stream"; payload.text = String(content); }
 
-  await saveOutputFile({ filename, mime: "application/octet-stream", text: String(content) });
+  try {
+    if (save) await saveToDevice(payload);
+    else await shareFile(payload);
+  } catch (e) {
+    alert("فشل حفظ/مشاركة الملف: " + String(e));
+  }
 };
 
 // --- Professional App Icon Component ---
