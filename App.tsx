@@ -11,6 +11,7 @@ import { processDesign } from './services/imageProcessor';
 import { generateDXF } from './services/dxfGenerator';
 import { generateSVG } from './services/svgGenerator';
 import { generatePDF } from './services/pdfGenerator';
+import { saveOutputFile } from './services/saveOutputFile';
 import { analyzeDesignWithAI } from './services/geminiService';
 
 enum AppStep {
