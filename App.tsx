@@ -24,16 +24,39 @@ enum AppStep {
   HISTORY = 7
 }
 
-const downloadFile = (content: string, extension: string) => {
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `led_design_${Date.now()}.${extension}`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+const downloadFile = async (content: any, extension: string) => {
+  const filename = `led_design_${Date.now()}.${extension}`;
+
+  if (extension === "svg") {
+    await saveOutputFile({ filename, mime: "image/svg+xml", text: String(content) });
+    return;
+  }
+
+  if (extension === "dxf") {
+    await saveOutputFile({ filename, mime: "application/dxf", text: String(content) });
+    return;
+  }
+
+  if (extension === "pdf") {
+    if (content instanceof Uint8Array) {
+      await saveOutputFile({ filename, mime: "application/pdf", bytes: content });
+      return;
+    }
+    if (content instanceof ArrayBuffer) {
+      await saveOutputFile({ filename, mime: "application/pdf", bytes: new Uint8Array(content) });
+      return;
+    }
+    if (typeof Blob !== "undefined" && content instanceof Blob) {
+      const ab = await content.arrayBuffer();
+      await saveOutputFile({ filename, mime: "application/pdf", bytes: new Uint8Array(ab) });
+      return;
+    }
+    const enc = new TextEncoder();
+    await saveOutputFile({ filename, mime: "application/pdf", bytes: enc.encode(String(content)) });
+    return;
+  }
+
+  await saveOutputFile({ filename, mime: "application/octet-stream", text: String(content) });
 };
 
 // --- Professional App Icon Component ---
